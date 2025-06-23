@@ -1,13 +1,10 @@
 import discord
-import random
 import asyncio
+import random
 import os
 
 TOKEN = os.environ["DISCORD_TOKEN"]
-CHANNEL_ID = 123456789012345678  # 🔁 Замени на ID своего канала
-
-intents = discord.Intents.default()
-client = discord.Client(intents=intents)
+CHANNEL_ID = int(os.environ["CHANNEL_ID"])
 
 questions = [
     "Что бы ты выбрал: летать или быть невидимым?",
@@ -17,24 +14,23 @@ questions = [
     "Что бы ты сказал себе 5 лет назад?"
 ]
 
-async def send_daily_question():
-    await client.wait_until_ready()
-    channel = client.get_channel(CHANNEL_ID)
-    while not client.is_closed():
-        question = random.choice(questions)
-        await channel.send(f"❓ *Дневной вопрос:*\n{question}")
-        await asyncio.sleep(86400)  # 24 часа
+intents = discord.Intents.default()
 
-@client.event
-async def on_ready():
-    print(f'Бот вошёл как {client.user}')
+class DailyBot(discord.Client):
+    async def setup_hook(self):
+        # Запускаем задачу после полной инициализации
+        self.bg_task = self.loop.create_task(self.send_daily_question())
 
-client.loop.create_task(send_daily_question())
-client.run(TOKEN)
+    async def on_ready(self):
+        print(f"✅ Бот вошёл как {self.user}")
 
-@client.event
-async def on_message(message):
-    if message.content == "!вопрос":
-        if message.channel.id == CHANNEL_ID:
+    async def send_daily_question(self):
+        await self.wait_until_ready()
+        channel = self.get_channel(CHANNEL_ID)
+        while True:
             question = random.choice(questions)
-            await message.channel.send(f"❓ *Вопрос по команде:*\n{question}")
+            await channel.send(f"❓ *Дневной вопрос:*\n{question}")
+            await asyncio.sleep(86400)  # 24 часа
+
+client = DailyBot(intents=intents)
+client.run(TOKEN)
