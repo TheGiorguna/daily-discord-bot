@@ -31,3 +31,10 @@ async def on_ready():
 
 client.loop.create_task(send_daily_question())
 client.run(TOKEN)
+
+@client.event
+async def on_message(message):
+    if message.content == "!вопрос":
+        if message.channel.id == CHANNEL_ID:
+            question = random.choice(questions)
+            await message.channel.send(f"❓ *Вопрос по команде:*\n{question}")
